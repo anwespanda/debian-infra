@@ -1,0 +1,169 @@
+version: '2.1'
+
+networks:
+  caddy:
+    name: caddy
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 172.12.0.0/16
+        - subnet: fd00:dead:beea::/112
+    driver: bridge
+
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /home/pandacowbat/apps/docker/portainer/portainer-data:/data
+    networks:
+      - caddy
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    container_name: caddy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /home/pandacowbat/apps/docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /home/pandacowbat/apps/docker/caddy/site:/srv
+      - /home/pandacowbat/apps/docker/caddy/caddy_date:/data
+      - /home/pandacowbat/apps/docker/caddy/caddy_config:/config
+    networks:
+      - caddy
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - /home/pandacowbat/apps/docker/uptime-kuma/data:/app/data
+    ports:
+      - 3001:3001
+    networks:
+      - caddy
+  nextcloud:
+    container_name: nextcloud
+    image: linuxserver/nextcloud:latest
+    restart: unless-stopped
+    env_file:
+      - /home/pandacowbat/apps/docker/.env/nextcloud
+    volumes:
+      - /home/pandacowbat/apps/docker/nextcloud/data:/data
+      - /home/pandacowbat/apps/docker/nextcloud/config:/config
+    networks:
+      - caddy
+  mariadb:
+    container_name: mariadb
+    image: bitnami/mariadb:latest
+    restart: unless-stopped
+    env_file:
+      - /home/pandacowbat/apps/docker/.env/mariadb
+    volumes:
+      - /home/pandacowbat/apps/docker/mariadb/data:/bitnami/mariadb
+      - /home/pandacowbat/apps/docker/mariadb/config/my.cnf:/opt/bitnami/mariadb/conf/my_custom.cnf:ro
+    networks:
+      - caddy
+  imaginary:
+    container_name: imaginary
+    image: h2non/imaginary:latest
+    restart: unless-stopped
+    environment:
+       PORT: 9000
+    command: -enable-url-source
+    ports:
+      - "9000:9000"
+    networks:
+      - caddy
+  wordpress-anwes:
+    container_name: wordpress-anwes
+    image: wordpress:latest
+    volumes:
+      - /home/pandacowbat/apps/docker/wordpress/data:/var/www/html
+    restart:
+      unless-stopped
+    env_file:
+      - /home/pandacowbat/apps/docker/.env/wordpress
+    networks:
+      - caddy
+  redis:
+    container_name: redis
+    image: bitnami/redis:latest
+    restart: unless-stopped
+    env_file:
+      - /home/pandacowbat/apps/docker/.env/redis
+    volumes:
+      - /home/pandacowbat/apps/docker/nextcloud/redis:/bitnami/redis/data
+    expose:
+      - 6379
+    networks:
+      - caddy
+  adminer:
+    container_name: adminer
+    image: adminer
+    restart: unless-stopped
+    ports: 
+      - 8080:8080
+    networks:
+      - caddy
+  coder:
+    container_name: coder
+    image: ghcr.io/coder/coder:${CODER_VERSION:-latest}
+    restart: unless-stopped
+    ports:
+      - 7080:7080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - /home/pandacowbat/apps/docker/.env/coder
+    networks:
+      - caddy
+  coder-db:
+    container_name: coder-db
+    image: postgres:14.2
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    env_file:
+      - /home/pandacowbat/apps/docker/.env/coder-db
+    volumes:
+      - /home/pandacowbat/apps/docker/coder-db/coder_data:/var/lib/postgresql/data
+    networks:
+      - caddy
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    volumes:
+      - /home/pandacowbat/apps/docker/vaultwarden/vw-data:/data
+    networks:
+      - caddy
+  trilium:
+    image: zadam/trilium
+    container_name: trilium
+    restart: unless-stopped
+    environment: 
+      - TRILIUM_DATA_DIR=/home/node/trilium-data
+    ports:
+      - 6060:6060
+    volumes:
+      - /home/pandacowbat/apps/docker/trilium:/home/node/trilium-data
+    networks:
+      - caddy
+  ihatemoney:
+    container_name: ihatemoney
+    image: ihatemoney/ihatemoney:latest
+    env_file:
+      - /home/pandacowbat/apps/docker/.env/ihatemoney
+    volumes:
+      - /home/pandacowbat/apps/docker/ihatemoney:/database
+    ports:
+      - 8001:8001
+    restart: unless-stopped
+    networks:
+      - caddy

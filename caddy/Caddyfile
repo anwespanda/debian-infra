@@ -1,0 +1,74 @@
+(security) {
+  Cache-Control "no-cache, public"
+  #Don't be confused by the name, no-cache means it will need to validate with the origin server before serving cached content
+  Referrer-Policy "same-origin"
+  -Server
+  Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+  X-Content-Type-Options "nosniff"
+  X-Frame-Options "SAMEORIGIN"
+  X-XSS-Protection "1; mode=block"
+  Feature-Policy "accelerometer 'none'; ambient-light-sensor 'none'; autoplay 'none'; camera 'none'; encrypted-media 'none'; fullscreen 'self'; geolocation 'none'; gyroscope 'none'; magnetometer 'none'; microphone 'none'; midi 'none'; payment 'none'; picture-in-picture 'self'; speaker 'none'; usb 'none'; vr 'none';"
+}
+(acme_http) {
+tls mail@anwespanda.com
+header / {
+ import security
+ }
+}
+
+port.pandacowbat.com {
+	import acme_http
+	reverse_proxy http://portainer:9000
+}
+
+uptime.pandacowbat.com {
+	import acme_http
+	reverse_proxy http://uptime-kuma:3001
+}
+
+db.pandacowbat.com {
+	import acme_http
+	reverse_proxy http://adminer:8080
+}
+cloud.pandacowbat.com {
+	redir https://cloud.anwespanda.com{uri}
+}
+cloud.anwespanda.com {
+	import acme_http
+	reverse_proxy https://nextcloud:443 {
+          transport http {
+            tls_insecure_skip_verify
+    	  }
+  	}
+
+}
+
+pandacowbat.com { 
+	redir https://anwespanda.com{uri}
+}
+anwespanda.com {
+	import acme_http
+	reverse_proxy http://wordpress-anwes
+}
+
+
+coder.pandacowbat.com {
+	import acme_http
+	reverse_proxy http://coder:7080
+}
+
+lock.pandacowbat.com {
+	import acme_http
+	reverse_proxy http://vaultwarden:80
+}
+
+notes.pandacowbat.com {
+	import acme_http
+	reverse_proxy http://trilium:6080
+}
+
+split.pandacowbat.com {
+	import acme_http
+	reverse_proxy http://ihatemoney:8001
+}
+
